@@ -113,8 +113,11 @@ echo "DELETED!";
 }
 elseif ($_POST['radio']=="un") { $select = mysql_select_db(DB_NAME); 
 $tablename = $table_prefix . "comments";
-$query  = ("DELETE FROM $tablename WHERE comment_approved = 0 or comment_approved='spam'"); #TRUNCATE comments
+$tablename2 = $table_prefix . "commentmeta"
+$query  = ("DELETE FROM $tablename WHERE comment_approved = 0 or comment_approved = 'spam'"); 
 mysql_query($query, $connect); 
+$query2  = ("DELETE FROM $tablename2 WHERE comment_id NOT IN (SELECT comment_id FROM $tablename)");
+mysql_query($query2, $connect); 
 echo "DELETED!"; 
     } }}
 else{ echo "<span>Please choose any radio button.</span>";}
