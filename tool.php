@@ -113,7 +113,7 @@ echo "DELETED!";
 }
 elseif ($_POST['radio']=="un") { $select = mysql_select_db(DB_NAME); 
 $tablename = $table_prefix . "comments";
-$query  = ("DELETE FROM $tablename WHERE comment_approved = 0"); #TRUNCATE comments
+$query  = ("DELETE FROM $tablename WHERE comment_approved = 0 or comment_approved='spam'"); #TRUNCATE comments
 mysql_query($query, $connect); 
 echo "DELETED!"; 
     } }}
