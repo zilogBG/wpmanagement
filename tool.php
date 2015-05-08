@@ -46,19 +46,21 @@ $connect = mysql_connect(DB_HOST, DB_USER, DB_PASSWORD); #connect to DB
 
 $select = mysql_select_db(DB_NAME); 
 $tablename = $table_prefix . "comments";
-$query  = ("SELECT COUNT(comment_approved) FROM $tablename WHERE comment_approved = 0");
-$execute = mysql_query($query, $connect);
+$countunapproved  = ("SELECT COUNT(comment_approved) FROM $tablename WHERE comment_approved = 0");
+$execute = mysql_query($countunapproved, $connect);
 	if ($execute) {
     		echo ("Comments UNapproved (comment_approved = 0): "), mysql_result($execute, 0);}
-	else {echo "Comment count failed";}    
+	else {
+		echo "Comment count failed";}    
     
 		echo ('<br>');
 
-$query  = ("SELECT COUNT(comment_approved) FROM $tablename"); 
-$execute = mysql_query($query, $connect);
+$counttotal  = ("SELECT COUNT(comment_approved) FROM $tablename"); 
+$execute = mysql_query($counttotal, $connect);
 	if ($execute) {
     		echo ("Comments total: "), mysql_result($execute, 0);}
-    	else {echo "Comment count failed";}    
+    	else {
+    		echo "Comment count failed";}    
     	
 		echo ('<br>');		
 
@@ -90,9 +92,10 @@ if ($zip->open('antispam.zip') === TRUE) {
     $zip->close();
     echo 'Plugin extracted';
 } else {
-    echo 'Extract Failed';
-    }
-echo "<br>";   
+    echo 'Extract Failed';}
+    
+echo "<br>"; 
+
 $activate = activate_plugin( "$path/wp-content/plugins/anti-spam/anti-spam.php" ); #Activate the plugin
 if ( is_wp_error( $activate ) ) {
 	
