@@ -122,11 +122,14 @@ else {
                             $query2  = ("DELETE FROM $tablename2 WHERE comment_id NOT IN (SELECT comment_id FROM $tablename)");
                             mysql_query($query2, $connect);
                             echo "DELETED!";
-                            } }}
-                            else{ echo "<span>Please choose any radio button.</span>";}
+                            }
+                        }
+                    }
 
-                                mysql_close($connect);
-                            exit;
+                    else{ echo "<span>Please choose any radio button.</span>";}
+
+                        mysql_close($connect);
+                    exit;
 ?>
 </body>
 </html>
