@@ -1,135 +1,210 @@
-<html>
-	<head>
-		<title>SPAM tool</title>
-		<style>
-form {
-	 text-align: center;
-
-}
-
-h2 {
-	 text-align: center;
-   }
-
-body {
-	background-color: linen;
-}
-</style>
-	</head>
-
-	<body>
-
-		<h2>Simple SPAM Managing tool</h2>
-
-<form action="" method="post">
-<input type="radio" name="radio" value="all">Delete ALL comments
-<br>
-<input type="radio" name="radio" value="un">Delete UNapproved comments
-<br>
-<input type="submit" name="submit" value="Kill spam" />
-</form>
-
-
 <?php
 
 include "wp-config.php"; #adds Wordpress configuration, so we can use DB config
 include "wp-load.php";
 include "wp-admin/includes/plugin.php";
-
-$connect = mysql_connect(DB_HOST, DB_USER, DB_PASSWORD); #connect to DB
-if (!$connect) {
-    echo 'Database connect failed';
-} else {
-    echo 'Connection to database OK!';
+$path = getcwd();
+function install_antispam()
+{
+    
+    $args        = (object) array(
+        'slug' => 'Anti-spam'
+    );
+    $request     = array(
+        'action' => 'plugin_information',
+        'timeout' => 15,
+        'request' => serialize($args)
+    );
+    $url         = 'http://api.wordpress.org/plugins/info/1.0/';
+    $response    = wp_remote_post($url, array(
+        'body' => $request
+    ));
+    $plugin_info = unserialize($response['body']);
+    $durl        = $plugin_info->download_link;
+    echo "$durl";
+    echo "<br>";
+    $download = file_put_contents("antispam.zip", file_get_contents("$durl")); #downloads the Anti-spam plugin
+    if ($download) {
+        echo "Download OK!";
+    } else {
+        echo "Download FAIL!";
+    } #check if download is OK
+    echo "<br>";
+    $path = getcwd();
+    $zip  = new ZipArchive; #extracts the .zip
+    if ($zip->open('antispam.zip') === TRUE) {
+        $zip->extractTo("$path/wp-content/plugins/");
+        $zip->close();
+        echo 'Plugin extracted';
+    } else {
+        echo 'Extract Failed';
+    }
+    echo "<br>";
+    $activate = activate_plugin("$path/wp-content/plugins/anti-spam/anti-spam.php"); #Activate the plugin
+    if (is_wp_error($activate)) {
+    } else {
+        echo 'AntiSPAM plug-in activated!';
+    }
+    echo ('<br>');
+    
 }
-echo "<br>";
 
-$select = mysql_select_db(DB_NAME);
-$tablename = $table_prefix . "comments";
-$countunapproved  = ("SELECT COUNT(comment_approved) FROM $tablename WHERE comment_approved = 0");
-$execute = mysql_query($countunapproved, $connect);
-if ($execute) {
-    echo ("Comments UNapproved (comment_approved = 0): "), mysql_result($execute, 0);}
-else {
-    echo "Comment count failed";}
+echo ('<html>
+            <head>
+                <title>SPAM tool</title>
+    <style>
+        form   {
+     text-align: center;
+            }
+        h2 {
+     text-align: center;
+               }
+        body {
+    background-color: linen;
+            }
+    </style>
+            </head>
+                <body>
 
-        echo ('<br>');
+        <h2>Simple SPAM Managing tool</h2>
 
-    $counttotal  = ("SELECT COUNT(comment_approved) FROM $tablename");
-    $execute = mysql_query($counttotal, $connect);
-    if ($execute) {
-        echo ("Comments total: "), mysql_result($execute, 0);}
-    else {
-        echo "Comment count failed";}
+        <form method="post" action="">
+<input name="deleteall" type="submit" value="Delete all comments" />
+</form>
 
-            echo ('<br>');
+           <form method="post" action="">
+<input name="deletespam" type="submit" value="Delete SPAM comments" />
+</form>
 
-        $args = (object) array( 'slug' => 'Anti-spam' );
+        <form method="post" action="">
+<input name="deleteunap" type="submit" value="Delete Unapproved comments" />
+</form>     
 
-        $request = array( 'action' => 'plugin_information', 'timeout' => 15, 'request' => serialize( $args) );
+        <form method="post" action="">
+<input name="meta" type="submit" value="Clean commentmeta table" />
+</form>   
 
-        $url = 'http://api.wordpress.org/plugins/info/1.0/';
-
-        $response = wp_remote_post( $url, array( 'body' => $request ) );
-
-        $plugin_info = unserialize( $response['body'] );
-
-        $durl = $plugin_info->download_link;
-
-        echo "$durl";
-        $download = file_put_contents("antispam.zip", file_get_contents("$durl")); #downloads the Anti-spam plugin
-
-        if ($download) {
-            echo "Download OK!";}
-        else {
-            echo "Download FAIL!";} #check if download is OK
-                echo "<br>";
-            $path = getcwd();
-
-            $zip = new ZipArchive; #extracts the .zip
-            if ($zip->open('antispam.zip') === TRUE) {
-                $zip->extractTo("$path/wp-content/plugins/");
-                $zip->close();
-                echo 'Plugin extracted';
-            } else {
-                echo 'Extract Failed';}
-
-                    echo "<br>";
-
-                $activate = activate_plugin( "$path/wp-content/plugins/anti-spam/anti-spam.php" ); #Activate the plugin
-                if ( is_wp_error( $activate ) ) {
-
-                } else {
-
-                    echo 'AntiSPAM plug-in activated!';}
-
-                        echo ('<br>');
-
-                    if (isset($_POST['submit'])) {
-                        if(isset($_POST['radio']))
-                        {
-                            if ($_POST['radio']=="all") { $select = mysql_select_db(DB_NAME);
-                            $tablename = $table_prefix . "comments";
-                            $query  = ("TRUNCATE $tablename"); #TRUNCATE comments
-                            mysql_query($query, $connect);
-                            echo "DELETED!";
-                            }
-                            elseif ($_POST['radio']=="un") { $select = mysql_select_db(DB_NAME);
-                            $tablename = $table_prefix . "comments";
-                            $tablename2 = $table_prefix . "commentmeta";
-                            $query  = ("DELETE FROM $tablename WHERE comment_approved = 0 or comment_approved = 'spam'");
-                            mysql_query($query, $connect);
-                            $query2  = ("DELETE FROM $tablename2 WHERE comment_id NOT IN (SELECT comment_id FROM $tablename)");
-                            mysql_query($query2, $connect);
-                            echo "DELETED!";
-                            }
-                        }
-                    }
-
-                    else{ echo "<span>Please choose any radio button.</span>";}
-
-                        mysql_close($connect);
-                    exit;
-?>
 </body>
-</html>
+</html>');
+
+echo (DB_NAME);
+
+echo ("<br>");
+
+$connection    = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+$tablecomments = $table_prefix . "comments";
+$commentmeta   = $table_prefix . "commentmeta";
+
+if (!$connection) {
+    die('Connect Error' . mysqli_connect_error());
+} else {
+    echo ("Connected succeffully to DB!");
+}
+echo ("<br>");
+
+$countall   = mysqli_query($connection, "SELECT COUNT(*) FROM $tablecomments");
+$countedall = mysqli_fetch_array($countall);
+
+if ($countedall) {
+    echo ("Comments total: "), $countedall[0];
+} else {
+    die('Connect Error: ' . mysqli_error($connection));
+}
+
+echo ("<br>");
+
+$count   = mysqli_query($connection, "SELECT COUNT(*) FROM $tablecomments WHERE comment_approved = '0'");
+$counted = mysqli_fetch_array($count);
+
+if ($counted) {
+    
+    echo ("Comments UNapproved (comment_approved = 0): "), $counted[0];
+}
+
+else {
+    die('Connect Error: ' . mysqli_error($connection));
+}
+
+echo ("<br>");
+
+$countspam   = mysqli_query($connection, "SELECT COUNT(*) FROM $tablecomments WHERE comment_approved = 'spam'");
+$countedspam = mysqli_fetch_array($countspam);
+
+if ($countedspam) {
+    
+    echo ("Comments marked as spam (comment_approved = spam): "), $countedspam[0];
+}
+
+else {
+    die('Connect Error: ' . mysqli_error($connection));
+}
+
+echo ("<br>");
+
+echo ("Comments approved: "), $countedall[0] - $counted[0] - $countedspam[0];
+
+
+echo ("<br>");
+
+if (file_exists("$path/wp-content/plugins/anti-spam/anti-spam.php")) {
+    
+    echo ("Anti - SPAM plugin already installed!");
+    
+} else {
+    install_antispam();
+    
+}
+echo ("<br>");
+if (isset($_POST['deleteall'])) {
+    $deleteall = mysqli_query($connection, "TRUNCATE TABLE $tablecomments");
+    if ($deleteall) {
+        
+        echo ("All comments deleted!");
+    }
+    
+    else {
+        die('Connect Error: ' . mysqli_error($connection));
+    }
+    
+}
+
+if (isset($_POST['deletespam'])) {
+    $deletespam = mysqli_query($connection, "DELETE FROM $tablecomments WHERE comment_approved = 'spam'");
+    if ($deletespam) {
+        
+        echo ("Comments marked as spam deleted!");
+    }
+    
+    else {
+        die('Connect Error: ' . mysqli_error($connection));
+    }
+    
+}
+
+if (isset($_POST['deleteunap'])) {
+    $deleteunap = mysqli_query($connection, "DELETE FROM $tablecomments WHERE comment_approved = '0'");
+    if ($deleteunap) {
+        
+        echo ("Comments marked as unapproved deleted!");
+    }
+    
+    else {
+        die('Connect Error: ' . mysqli_error($connection));
+    }
+}
+if (isset($_POST['meta'])) {
+    $deletemeta = mysqli_query($connection, "DELETE FROM $commentmeta WHERE comment_id NOT IN (SELECT comment_id FROM $tablecomments)");
+    if ($deletemeta) {
+        
+        echo ("Commentmeta table cleaned!");
+    }
+    
+    else {
+        die('Connect Error: ' . mysqli_error($connection));
+    }
+    
+}
+
+mysqli_close($connection);
+exit;
+?>
