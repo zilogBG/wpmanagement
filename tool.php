@@ -2,7 +2,7 @@
 
 include "wp-config.php"; #adds Wordpress configuration, so we can use DB config
 include "wp-load.php";
-include "wp-admin/includes/plugin.php";
+include_once "wp-admin/includes/plugin.php";
 $path = getcwd();
 function install_antispam()
 {
