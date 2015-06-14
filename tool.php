@@ -1,9 +1,34 @@
-<?php
+ <?php
 
 include "wp-config.php"; #adds Wordpress configuration, so we can use DB config
 include "wp-load.php";
 include_once "wp-admin/includes/plugin.php";
+include_once "wp-includes/user.php";
+include_once "wp-admin/includes/user.php";
+
 $path = getcwd();
+
+function create_newuser($username, $password, $email)
+{
+    
+    $userdata = array(
+        
+        'user_login' => $username,
+        'user_pass' => $password,
+        'role' => 'administrator'
+    );
+    
+    if (username_exists($username)) {
+        
+        echo ("The user $username already exists");
+        
+    } else {
+        
+        wp_insert_user($userdata);
+        
+    }
+}
+
 function install_antispam()
 {
     
@@ -51,7 +76,7 @@ function install_antispam()
 
 echo ('<html>
             <head>
-                <title>SPAM tool</title>
+                <title>Wordpress Tool</title>
     <style>
         form   {
      text-align: center;
@@ -66,34 +91,33 @@ echo ('<html>
             </head>
                 <body>
 
-        <h2>Simple SPAM Managing tool</h2>
-
-        <form method="post" action="">
-<input name="deleteall" type="submit" value="Delete all comments" />
-</form>
-
-           <form method="post" action="">
+        <h4>SPAM Managing</h4>
+        
+                <form method="post">
+<input name="instalplugin" type="submit" value="Install Anti-SPAM plugin" />
+  
 <input name="deletespam" type="submit" value="Delete SPAM comments" />
-</form>
-
-        <form method="post" action="">
+ 
 <input name="deleteunap" type="submit" value="Delete Unapproved comments" />
-</form>     
 
-        <form method="post" action="">
 <input name="meta" type="submit" value="Clean commentmeta table" />
-</form>   
+
+<input name="optimize" type="submit" value="Optimize comment tables" />
+
+<input name="deleteall" type="submit" style="color:red;" value="Delete all comments" />
+</form>  
 
 </body>
 </html>');
 
-echo (DB_NAME);
+echo ('Website database is: ' . DB_NAME);
 
 echo ("<br>");
 
 $connection    = mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 $tablecomments = $table_prefix . "comments";
 $commentmeta   = $table_prefix . "commentmeta";
+$userstable    = $table_prefix . "users";
 
 if (!$connection) {
     die('Connect Error' . mysqli_connect_error());
@@ -146,14 +170,19 @@ echo ("Comments approved: "), $countedall[0] - $counted[0] - $countedspam[0];
 
 echo ("<br>");
 
-if (file_exists("$path/wp-content/plugins/anti-spam/anti-spam.php")) {
-    
-    echo ("Anti - SPAM plugin already installed!");
-    
-} else {
-    install_antispam();
-    
+
+if (isset($_POST['instalplugin'])) {
+    if (file_exists("$path/wp-content/plugins/anti-spam/anti-spam.php")) {
+        
+        echo ("Anti - SPAM plugin already installed!");
+        
+    } else {
+        install_antispam();
+        
+    }
 }
+
+
 echo ("<br>");
 if (isset($_POST['deleteall'])) {
     $deleteall = mysqli_query($connection, "TRUNCATE TABLE $tablecomments");
@@ -205,6 +234,82 @@ if (isset($_POST['meta'])) {
     
 }
 
+if (isset($_POST['optimize'])) {
+    $deleteall = mysqli_query($connection, "OPTIMIZE TABLE $tablecomments, $commentmeta");
+    if ($deleteall) {
+        
+        echo ("Tables optimized!");
+    }
+    
+    else {
+        die('Connect Error: ' . mysqli_error($connection));
+    }
+    
+}
+
+echo ("<h4>User Managing</h3>");
+
+$username = $_POST["cuser"];
+$password = $_POST["cpass"];
+$email    = "domain@domain.com";
+
+
+if (isset($_POST['cuser'], $_POST['cpass'])) {
+    create_newuser($username, $password, $email);
+}
+
+echo ("<br>");
+
+
+$id = $_POST['deluser'];
+
+if (isset($_POST['deluser'])) {
+    wp_delete_user($id);
+    
+}
+
+$all_admin = new WP_User_Query(array(
+    'role' => 'administrator'
+));
+echo ("Administrator users:");
+echo ("<br>");
+echo ("<br>");
+if (!empty($all_admin->results)) {
+    foreach ($all_admin->results as $user) {
+        echo "
+    
+        <table border='1' style='width:100%; table-layout: fixed;'> 
+        <tr>
+        <td>$user->ID</td>
+        <td>$user->user_login</td>
+        <td>$user->user_pass</td>
+        <td><form method='post'><button type='submit'; style='color:red'; name='deluser' value='$user->ID'>Delete user!</button></form></td> 
+        </tr>
+        </table>";
+    }
+} else {
+    echo 'No users found.';
+}
+
+echo ("<br>");
+
+echo ("Add an administrator user:");
+echo ('<form style="text-align:left;" method="post"  action="">
+Username:
+<input type="text" name="cuser" value="">
+<br>
+Password:
+<input type="text" name="cpass" value="">
+<br>
+<input type="submit" value="Submit">
+</form>');
+
+if ($_POST["cuser"] === "")
+    echo "You are trying to add a user without a username!";
+if ($_POST["cpass"] === "")
+    echo "<br>You should specify a password for the user!";
+
+
 mysqli_close($connection);
-exit;
-?>
+exit();
+?> 
